@@ -1,22 +1,24 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+const textureLoader = new THREE.TextureLoader(); // Instantiate TextureLoader
+
 let scene, camera, renderer;
 let sun;
 const planetsArray = []; // To store planet meshes and their orbital data
 let clock; // To manage animation timing
 let controls; // To manage camera controls
 
-// Planet data: { name, radius, color, orbitalRadius, orbitalSpeed }
+// Planet data: { name, radius, color, orbitalRadius, orbitalSpeed, textureFile }
 const planetsData = [
-    { name: "Mercury", radius: 0.8, color: 0x8c8c8c, orbitalRadius: 18, orbitalSpeed: 1.0 },
-    { name: "Venus",   radius: 1.8, color: 0xe6e6e6, orbitalRadius: 25, orbitalSpeed: 0.75 },
-    { name: "Earth",   radius: 2,   color: 0x0077ff, orbitalRadius: 35, orbitalSpeed: 0.5 },
-    { name: "Mars",    radius: 1.5, color: 0xff5733, orbitalRadius: 50, orbitalSpeed: 0.35 },
-    { name: "Jupiter", radius: 5,   color: 0xffc87c, orbitalRadius: 80, orbitalSpeed: 0.2 },
-    { name: "Saturn",  radius: 4.5, color: 0xf0e68c, orbitalRadius: 115, orbitalSpeed: 0.15 },
-    { name: "Uranus",  radius: 3,   color: 0x7fdbff, orbitalRadius: 145, orbitalSpeed: 0.1 },
-    { name: "Neptune", radius: 2.8, color: 0x0050ff, orbitalRadius: 175, orbitalSpeed: 0.07 }
+    { name: "Mercury", radius: 0.8, color: 0x8c8c8c, orbitalRadius: 18, orbitalSpeed: 1.0, textureFile: 'images/2k_mercury.jpg' },
+    { name: "Venus",   radius: 1.8, color: 0xe6e6e6, orbitalRadius: 25, orbitalSpeed: 0.75, textureFile: 'images/2k_venus_surface.jpg' },
+    { name: "Earth",   radius: 2,   color: 0x0077ff, orbitalRadius: 35, orbitalSpeed: 0.5, textureFile: 'images/2k_earth_daymap.jpg' },
+    { name: "Mars",    radius: 1.5, color: 0xff5733, orbitalRadius: 50, orbitalSpeed: 0.35, textureFile: 'images/2k_mars.jpg' },
+    { name: "Jupiter", radius: 5,   color: 0xffc87c, orbitalRadius: 80, orbitalSpeed: 0.2, textureFile: 'images/2k_jupiter.jpg' },
+    { name: "Saturn",  radius: 4.5, color: 0xf0e68c, orbitalRadius: 115, orbitalSpeed: 0.15, textureFile: 'images/2k_saturn.jpg' },
+    { name: "Uranus",  radius: 3,   color: 0x7fdbff, orbitalRadius: 145, orbitalSpeed: 0.1, textureFile: 'images/2k_uranus.jpg' },
+    { name: "Neptune", radius: 2.8, color: 0x0050ff, orbitalRadius: 175, orbitalSpeed: 0.07, textureFile: 'images/2k_neptune.jpg' }
 ];
 
 function init() {
@@ -53,26 +55,67 @@ function init() {
     scene.add(pointLight);
 
     // Sun
-    const sunGeometry = new THREE.SphereGeometry(10, 32, 32); // Radius 10
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: false }); // Yellow, ensure wireframe is off if not intended
+    const sunTexture = textureLoader.load('images/2k_sun.jpg');
+    const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
+    const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture }); // Use map for Sun with MeshBasicMaterial
     sun = new THREE.Mesh(sunGeometry, sunMaterial);
     scene.add(sun);
 
     // Planets
     planetsData.forEach(data => {
+        const planetTexture = textureLoader.load(data.textureFile);
         const planetGeometry = new THREE.SphereGeometry(data.radius, 32, 32);
-        const planetMaterial = new THREE.MeshBasicMaterial({ color: data.color, wireframe: false });
+        const planetMaterial = new THREE.MeshStandardMaterial({ map: planetTexture });
         const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
 
         // Initial position (along the x-axis for simplicity)
         planetMesh.position.x = data.orbitalRadius;
 
+        const planetEntry = {
+            mesh: planetMesh,
+            name: data.name, // Store name for identification
+            orbitalRadius: data.orbitalRadius,
+            orbitalSpeed: data.orbitalSpeed
+        };
+
+        // Add Moon to Earth
+        if (data.name === "Earth") {
+            const moonTexture = textureLoader.load('images/2k_moon.jpg');
+            const moonGeometry = new THREE.SphereGeometry(0.5, 16, 16); // Moon radius 0.5
+            const moonMaterial = new THREE.MeshStandardMaterial({ map: moonTexture });
+            const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+            
+            const moonOrbitRadius = data.radius + 2; // Orbit 2 units above Earth's surface
+            moonMesh.position.x = moonOrbitRadius; // Initial position relative to Earth
+            planetMesh.add(moonMesh); // Add moon as a child of Earth
+
+            planetEntry.moon = {
+                mesh: moonMesh,
+                orbitalRadius: moonOrbitRadius,
+                orbitalSpeed: 2.0 // Moon orbits Earth faster
+            };
+        }
+
+        // Add Rings to Saturn
+        if (data.name === "Saturn") {
+            const ringTexture = textureLoader.load('images/2k_saturn_ring_alpha.png');
+            const innerRingRadius = data.radius + 0.5;
+            const outerRingRadius = data.radius + 4;
+            const ringGeometry = new THREE.RingGeometry(innerRingRadius, outerRingRadius, 64);
+            const ringMaterial = new THREE.MeshBasicMaterial({
+                map: ringTexture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                alphaTest: 0.1 // Adjust if necessary for better transparency rendering
+            });
+            const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+            ringMesh.rotation.x = Math.PI / 2.3; // Tilt the rings
+            // ringMesh.rotation.y = 0.1; // Optional small rotation for aesthetics
+            planetMesh.add(ringMesh); // Add rings as a child of Saturn
+        }
+
         scene.add(planetMesh);
-        planetsArray.push({ 
-            mesh: planetMesh, 
-            orbitalRadius: data.orbitalRadius, 
-            orbitalSpeed: data.orbitalSpeed 
-        });
+        planetsArray.push(planetEntry);
     });
 
     // Handle window resize
@@ -100,7 +143,14 @@ function animate() {
     planetsArray.forEach(planetData => {
         planetData.mesh.position.x = planetData.orbitalRadius * Math.cos(elapsedTime * planetData.orbitalSpeed);
         planetData.mesh.position.z = planetData.orbitalRadius * Math.sin(elapsedTime * planetData.orbitalSpeed);
-        // Planets orbit on the XZ plane (y=0 relative to the sun)
+        
+        // Animate Moon if it exists
+        if (planetData.moon) {
+            const moonObj = planetData.moon;
+            moonObj.mesh.position.x = moonObj.orbitalRadius * Math.cos(elapsedTime * moonObj.orbitalSpeed);
+            moonObj.mesh.position.z = moonObj.orbitalRadius * Math.sin(elapsedTime * moonObj.orbitalSpeed);
+            // Moon orbits in Earth's local XZ plane
+        }
     });
 
     renderer.render(scene, camera);
