@@ -11,14 +11,14 @@ let controls; // To manage camera controls
 
 // Planet data: { name, radius, color, orbitalRadius, orbitalSpeed, textureFile }
 const planetsData = [
-    { name: "Mercury", radius: 0.8, color: 0x8c8c8c, orbitalRadius: 18, orbitalSpeed: 1.0, textureFile: 'images/2k_mercury.jpg' },
-    { name: "Venus",   radius: 1.8, color: 0xe6e6e6, orbitalRadius: 25, orbitalSpeed: 0.75, textureFile: 'images/2k_venus_surface.jpg' },
-    { name: "Earth",   radius: 2,   color: 0x0077ff, orbitalRadius: 35, orbitalSpeed: 0.5, textureFile: 'images/2k_earth_daymap.jpg' },
-    { name: "Mars",    radius: 1.5, color: 0xff5733, orbitalRadius: 50, orbitalSpeed: 0.35, textureFile: 'images/2k_mars.jpg' },
-    { name: "Jupiter", radius: 5,   color: 0xffc87c, orbitalRadius: 80, orbitalSpeed: 0.2, textureFile: 'images/2k_jupiter.jpg' },
-    { name: "Saturn",  radius: 4.5, color: 0xf0e68c, orbitalRadius: 115, orbitalSpeed: 0.15, textureFile: 'images/2k_saturn.jpg' },
-    { name: "Uranus",  radius: 3,   color: 0x7fdbff, orbitalRadius: 145, orbitalSpeed: 0.1, textureFile: 'images/2k_uranus.jpg' },
-    { name: "Neptune", radius: 2.8, color: 0x0050ff, orbitalRadius: 175, orbitalSpeed: 0.07, textureFile: 'images/2k_neptune.jpg' }
+    { name: "Mercury", radius: 1.6, color: 0x8c8c8c, orbitalRadius: 18, orbitalSpeed: 1.0, textureFile: 'images/2k_mercury.jpg' },
+    { name: "Venus",   radius: 3.6, color: 0xe6e6e6, orbitalRadius: 25, orbitalSpeed: 0.75, textureFile: 'images/2k_venus_surface.jpg' },
+    { name: "Earth",   radius: 4,   color: 0x0077ff, orbitalRadius: 35, orbitalSpeed: 0.5, textureFile: 'images/2k_earth_daymap.jpg' },
+    { name: "Mars",    radius: 3,   color: 0xff5733, orbitalRadius: 50, orbitalSpeed: 0.35, textureFile: 'images/2k_mars.jpg' },
+    { name: "Jupiter", radius: 10,  color: 0xffc87c, orbitalRadius: 80, orbitalSpeed: 0.2, textureFile: 'images/2k_jupiter.jpg' },
+    { name: "Saturn",  radius: 9,   color: 0xf0e68c, orbitalRadius: 115, orbitalSpeed: 0.15, textureFile: 'images/2k_saturn.jpg' },
+    { name: "Uranus",  radius: 6,   color: 0x7fdbff, orbitalRadius: 145, orbitalSpeed: 0.1, textureFile: 'images/2k_uranus.jpg' },
+    { name: "Neptune", radius: 5.6, color: 0x0050ff, orbitalRadius: 175, orbitalSpeed: 0.07, textureFile: 'images/2k_neptune.jpg' }
 ];
 
 function init() {
@@ -70,6 +70,13 @@ function init() {
 
         // Initial position (along the x-axis for simplicity)
         planetMesh.position.x = data.orbitalRadius;
+
+        // Add visual orbit line
+        const orbitGeometry = new THREE.RingGeometry(data.orbitalRadius - 0.2, data.orbitalRadius + 0.2, 128);
+        const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide });
+        const orbitLine = new THREE.Mesh(orbitGeometry, orbitMaterial);
+        orbitLine.rotation.x = Math.PI / 2; // Rotate to be in the XZ plane
+        scene.add(orbitLine); // Add orbit line to the scene
 
         const planetEntry = {
             mesh: planetMesh,
